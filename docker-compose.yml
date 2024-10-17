@@ -1,0 +1,56 @@
+services:
+
+  redis:
+    image: redis:7.0.0-alpine3.15
+    ports:
+      - "6379:6379"
+
+  mongo:
+    image: mongo:4.4.14
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    depends_on:
+      - redis
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile_app
+    environment:
+      REDIS_BROKER_DSN: ${REDIS_BROKER_DSN}
+      REDIS_BACKEND_DSN: ${REDIS_BACKEND_DSN}
+      MONGO_DSN: ${MONGO_DSN}
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+    volumes:
+      - ./app:/app
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile_celery
+    environment:
+      REDIS_BROKER_DSN: ${REDIS_BROKER_DSN}
+      REDIS_BACKEND_DSN: ${REDIS_BACKEND_DSN}
+      MONGO_DSN: ${MONGO_DSN}
+    depends_on:
+      - app
+    volumes:
+      - ./app:/app
+
+  tests:
+    build:
+        context: .
+        dockerfile: Dockerfile_tests
+    environment:
+      API_URL: ${API_URL}
+    depends_on:
+      - celery
+    volumes:
+      - ./tests:/tests

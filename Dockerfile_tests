@@ -1,0 +1,7 @@
+FROM python:3.9
+COPY /requirements-tests.txt /
+RUN pip install -r /requirements-tests.txt
+COPY /tests /
+COPY /scripts/run_tests.sh /
+WORKDIR /tests
+ENTRYPOINT ["bash", "/run_tests.sh"]
